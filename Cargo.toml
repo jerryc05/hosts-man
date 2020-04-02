@@ -1,0 +1,26 @@
+[package]
+name = "my-template"
+version = "0.1.0"
+authors = ["Ziyan \"Jerry\" Chen <jerryc443@gmail.com>"]
+edition = "2018"
+description = "A short description of my package"
+#documentation = "https://docs.rs/???"
+readme = "README.md"
+#homepage = "https://???.rs/"
+repository = "https://github.com/jerryc05/MyTemplate/"
+license = "GPL-3.0-or-later"
+keywords = ["template"]
+categories = [
+    "command-line-utilities"
+]
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+
+[profile.release]
+codegen-units = 1
+lto = true
+panic = 'abort'
