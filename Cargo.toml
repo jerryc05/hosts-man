@@ -1,15 +1,15 @@
 [package]
-name = "my-template"
+name = "hosts-man"
 version = "0.1.0"
 authors = ["Ziyan \"Jerry\" Chen <jerryc443@gmail.com>"]
 edition = "2018"
-description = "A short description of my package"
+description = "A \"hosts\" manager for everyone."
 #documentation = "https://docs.rs/???"
 readme = "README.md"
 #homepage = "https://???.rs/"
-repository = "https://github.com/jerryc05/MyTemplate/"
+repository = "https://github.com/jerryc05/hosts-man/"
 license = "GPL-3.0-or-later"
-keywords = ["template"]
+keywords = ["dns", "hosts"]
 categories = [
     "command-line-utilities"
 ]
