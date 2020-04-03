@@ -122,5 +122,5 @@ fn hosts_path() -> &'static Path {
     }
     unsafe { HOSTS_PATH = Some(path); }
   }
-  path
+  unsafe { HOSTS_PATH }.unwrap()
 }
