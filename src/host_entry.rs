@@ -10,7 +10,7 @@ pub(crate) struct HostEntryVec<'a, 'b> { inner: Vec<HostEntry<'a, 'b>> }
 #[derive(Debug)]
 pub(crate) struct HostEntry<'a, 'b> {
   pub(crate) ip: IpAddr,
-  host: Cow<'a, str>,
+  pub(crate) host: Cow<'a, str>,
   desc_no_pound_sign: Cow<'b, str>,
 }
 
