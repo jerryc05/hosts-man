@@ -92,35 +92,35 @@ pub(crate) fn parse_hosts<'a, 'b>() -> HostEntryVec<'a, 'b> {
   HostEntryVec { inner: host_entries }
 }
 
-static mut HOSTS_PATH: Option<&Path> = None;
-
 fn hosts_path() -> &'static Path {
-  if let Some(path) = unsafe { HOSTS_PATH } {
-    return path;
+  static mut HOSTS_PATH: Option<&Path> = None;
+
+  if unsafe { HOSTS_PATH } == None {
+    let mut path;
+
+    #[cfg(windows)] {
+      path = Path::new("C:/Windows/System32/drivers/etc/hosts");
+
+      if !path.is_file() {
+        path = Path::new("C:/WinNT/System32/drivers/etc/hosts");
+      }
+
+      if !path.is_file() {
+        path = Path::new("C:/Windows/hosts");
+      }
+
+      if !path.is_file() {
+        panic!("Cannot locate \"hosts\" file!")
+      }
+    }
+
+    #[cfg(not(windows))] {
+      path = Path::new("/etc/hosts");
+      if !path.is_file() {
+        panic!("Cannot locate \"hosts\" file!")
+      }
+    }
+    unsafe { HOSTS_PATH = Some(path); }
   }
-
-  let mut path;
-
-  if cfg!(windows) {
-    path = Path::new("C:/Windows/System32/drivers/etc/hosts");
-
-    if !path.is_file() {
-      path = Path::new("C:/WinNT/System32/drivers/etc/hosts");
-    }
-
-    if !path.is_file() {
-      path = Path::new("C:/Windows/hosts");
-    }
-
-    if !path.is_file() {
-      panic!("Cannot locate \"hosts\" file!")
-    }
-  } else {
-    path = Path::new("/etc/hosts");
-    if !path.is_file() {
-      panic!("Cannot locate \"hosts\" file!")
-    }
-  }
-  unsafe { HOSTS_PATH = Some(path); }
   path
 }
