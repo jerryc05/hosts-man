@@ -9,7 +9,7 @@ pub(crate) struct HostEntryVec<'a, 'b> { inner: Vec<HostEntry<'a, 'b>> }
 
 #[derive(Debug)]
 pub(crate) struct HostEntry<'a, 'b> {
-  ip: IpAddr,
+  pub(crate) ip: IpAddr,
   host: Cow<'a, str>,
   desc_no_pound_sign: Cow<'b, str>,
 }
@@ -29,6 +29,12 @@ impl<'a, 'b> Display for HostEntryVec<'a, 'b> {
     }
     write!(f, "{:-^1$}", "End of hosts list", WIDTH)?;
     Ok(())
+  }
+}
+
+impl<'a, 'b> AsRef<Vec<HostEntry<'a, 'b>>> for HostEntryVec<'a, 'b> {
+  fn as_ref(&self) -> &Vec<HostEntry<'a, 'b>> {
+    self.inner.as_ref()
   }
 }
 

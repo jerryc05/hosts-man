@@ -1,4 +1,4 @@
-use hosts_man::start;
+use hosts_man::*;
 
 fn main() {
   start();
