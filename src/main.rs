@@ -1,3 +1,5 @@
+use hosts_man::start;
+
 fn main() {
-    println!("Hello, world!");
+  start()
 }
