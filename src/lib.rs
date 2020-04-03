@@ -4,5 +4,5 @@ mod host_entry;
 
 pub fn start() {
   let entries = parse_hosts();
-  println!("{:?}", entries);
+  println!("{}", entries);
 }
