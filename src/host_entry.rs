@@ -21,7 +21,7 @@ impl<'a, 'b> Display for HostEntryVec<'a, 'b> {
 
     writeln!(f, "{:-^1$}", "Start of Hosts list", WIDTH)?;
     for (i, entry) in vec.iter().enumerate() {
-      writeln!(f, "{:2}: IP:   {}", i + 1, entry.ip)?;
+      writeln!(f, "{:2}: IP: {:?}", i + 1, entry.ip)?;
       writeln!(f, "\tHost: {}", entry.host)?;
       if !entry.desc_no_pound_sign.is_empty() {
         writeln!(f, "\tDesc: {}", entry.desc_no_pound_sign)?;
