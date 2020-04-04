@@ -4,7 +4,7 @@ use DnsQueryHeaderFlagsAa::*;
 use DnsQueryHeaderFlagsTc::*;
 use DnsQueryHeaderFlagsRd::*;
 use DnsQueryHeaderFlagsRa::*;
-use crate::dns_query::dns_query_0_header::DnsQueryHeaderFlagsRcode::{NoErr, FormatErr, SvrFailure, NameErr, NotImpl, Refused};
+use DnsQueryHeaderFlagsRcode::*;
 
 //  Header format
 //
@@ -68,7 +68,7 @@ impl DnsQueryHeaderFlags {
       0 => StdQuery,
       1 => InvQuery,
       2 => StatReq,
-      _ => _Resv
+      _ => DnsQueryHeaderFlagsOpcode::_Resv
     }
   }
   fn op_code_mut(&mut self, new: &DnsQueryHeaderFlagsOpcode) {
@@ -76,7 +76,7 @@ impl DnsQueryHeaderFlags {
       StdQuery => 0,
       InvQuery => 1,
       StatReq => 2,
-      _Resv => 3,
+      DnsQueryHeaderFlagsOpcode::_Resv => 3,
     };
     self.0 &= val << 11;
   }
