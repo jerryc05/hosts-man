@@ -5,6 +5,7 @@ use DnsQueryHeaderFlagsTc::*;
 use DnsQueryHeaderFlagsRd::*;
 use DnsQueryHeaderFlagsRa::*;
 use DnsQueryHeaderFlagsRcode::*;
+use std::mem::transmute;
 
 //  Header format
 //
@@ -43,20 +44,16 @@ pub(crate) struct DnsQueryHeaderFlags(u16);
 
 // qr
 impl DnsQueryHeaderFlags {
-  fn qr(&self) -> Result<DnsQueryHeaderFlagsQr, u8> {
+  fn qr(&self) -> DnsQueryHeaderFlagsQr {
     let val = ((self.0 >> 15) & 0b1) as u8;
     match val {
-      0 => Ok(Query),
-      1 => Ok(Response),
-      _ => Err(val)
+      0 => Query,
+      1 => Response,
+      _ => panic!("Invalid [qr] in header: [{}]!", val)
     }
   }
   fn qr_mut(&mut self, new: &DnsQueryHeaderFlagsQr) {
-    let val: u16 = match new {
-      Query => 0,
-      Response => 1
-    };
-    self.0 &= val << 15;
+    self.0 &= ((*new) as u16) << 15;
   }
 }
 
@@ -64,21 +61,10 @@ impl DnsQueryHeaderFlags {
 impl DnsQueryHeaderFlags {
   fn op_code(&self) -> DnsQueryHeaderFlagsOpcode {
     let val = ((self.0 >> 11) & 0b1111) as u8;
-    match val {
-      0 => StdQuery,
-      1 => InvQuery,
-      2 => StatReq,
-      _ => DnsQueryHeaderFlagsOpcode::_Resv
-    }
+    unsafe { transmute::<u8, DnsQueryHeaderFlagsOpcode>(val) }
   }
   fn op_code_mut(&mut self, new: &DnsQueryHeaderFlagsOpcode) {
-    let val: u16 = match new {
-      StdQuery => 0,
-      InvQuery => 1,
-      StatReq => 2,
-      DnsQueryHeaderFlagsOpcode::_Resv => 3,
-    };
-    self.0 &= val << 11;
+    self.0 &= ((*new) as u16) << 11;
   }
 }
 
@@ -86,11 +72,7 @@ impl DnsQueryHeaderFlags {
 impl DnsQueryHeaderFlags {
   fn aa(&self) -> DnsQueryHeaderFlagsAa {
     let val = ((self.0 >> 10) & 0b1) as u8;
-    match val {
-      0 => NonAuthAns,
-      1 => AuthAns,
-      _ => panic!("Invalid [aa] which shall not happen: [{}]!", val)
-    }
+    unsafe { transmute::<u8, DnsQueryHeaderFlagsAa>(val) }
   }
 }
 
@@ -98,18 +80,10 @@ impl DnsQueryHeaderFlags {
 impl DnsQueryHeaderFlags {
   fn tc(&self) -> DnsQueryHeaderFlagsTc {
     let val = ((self.0 >> 9) & 0b1) as u8;
-    match val {
-      0 => NonTrunc,
-      1 => Trunc,
-      _ => panic!("Invalid [tc] which shall not happen: [{}]!", val)
-    }
+    unsafe { transmute::<u8, DnsQueryHeaderFlagsTc>(val) }
   }
   fn tc_mut(&mut self, new: &DnsQueryHeaderFlagsTc) {
-    let val: u16 = match new {
-      NonTrunc => 0,
-      Trunc => 1
-    };
-    self.0 &= val << 9;
+    self.0 &= ((*new) as u16) << 9;
   }
 }
 
@@ -117,18 +91,10 @@ impl DnsQueryHeaderFlags {
 impl DnsQueryHeaderFlags {
   fn rd(&self) -> DnsQueryHeaderFlagsRd {
     let val = ((self.0 >> 8) & 0b1) as u8;
-    match val {
-      0 => NotDesired,
-      1 => Desired,
-      _ => panic!("Invalid [rd] which shall not happen: [{}]!", val)
-    }
+    unsafe { transmute::<u8, DnsQueryHeaderFlagsRd>(val) }
   }
   fn rd_mut(&mut self, new: &DnsQueryHeaderFlagsRd) {
-    let val: u16 = match new {
-      NotDesired => 0,
-      Desired => 1
-    };
-    self.0 &= val << 8;
+    self.0 &= ((*new) as u16) << 8;
   }
 }
 
@@ -136,18 +102,10 @@ impl DnsQueryHeaderFlags {
 impl DnsQueryHeaderFlags {
   fn ra(&self) -> DnsQueryHeaderFlagsRa {
     let val = ((self.0 >> 7) & 0b1) as u8;
-    match val {
-      0 => NotAvailable,
-      1 => Available,
-      _ => panic!("Invalid [ra] which shall not happen: [{}]!", val)
-    }
+    unsafe { transmute::<u8, DnsQueryHeaderFlagsRa>(val) }
   }
   fn ra_mut(&mut self, new: &DnsQueryHeaderFlagsRa) {
-    let val: u16 = match new {
-      NotAvailable => 0,
-      Available => 1
-    };
-    self.0 &= val << 7;
+    self.0 &= ((*new) as u16) << 7;
   }
 }
 
@@ -157,20 +115,12 @@ impl DnsQueryHeaderFlags {
 impl DnsQueryHeaderFlags {
   fn r_code(&self) -> DnsQueryHeaderFlagsRcode {
     let val = (self.0 & 0b1111) as u8;
-    match val {
-      0 => NoErr,
-      1 => FormatErr,
-      2 => SvrFailure,
-      3 => NameErr,
-      4 => NotImpl,
-      5 => Refused,
-      _ => DnsQueryHeaderFlagsRcode::_Resv,
-    }
+    unsafe { transmute::<u8, DnsQueryHeaderFlagsRcode>(val) }
   }
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub(crate) enum DnsQueryHeaderFlagsQr {
   /// 0: a query (0)
   Query = 0,
@@ -178,7 +128,7 @@ pub(crate) enum DnsQueryHeaderFlagsQr {
   Response = 1,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub(crate) enum DnsQueryHeaderFlagsOpcode {
   /// 0: a standard query (QUERY)
   StdQuery = 0,
@@ -186,8 +136,16 @@ pub(crate) enum DnsQueryHeaderFlagsOpcode {
   InvQuery = 1,
   /// 2: a server status request (STATUS)
   StatReq = 2,
-  /// 3-15: reserved for future use
-  _Resv = 3,
+  /// 3: unassigned
+  _UnAssign = 3,
+  /// 4: notify
+  Notify = 4,
+  /// 5: update
+  Upd = 5,
+  /// 6: DNS Stateful Operations (DSO)
+  Dso = 6,
+  /// 7-15: reserved for future use
+  _Resv = 15,  // use largest possible for correct `std::mem::transmute()` parsing
 }
 
 #[derive(Debug)]
@@ -198,7 +156,7 @@ pub(crate) enum DnsQueryHeaderFlagsAa {
   AuthAns = 1,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub(crate) enum DnsQueryHeaderFlagsTc {
   /// 0
   NonTrunc = 0,
@@ -206,7 +164,7 @@ pub(crate) enum DnsQueryHeaderFlagsTc {
   Trunc = 1,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub(crate) enum DnsQueryHeaderFlagsRd {
   /// 0
   NotDesired = 0,
@@ -214,7 +172,7 @@ pub(crate) enum DnsQueryHeaderFlagsRd {
   Desired = 1,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub(crate) enum DnsQueryHeaderFlagsRa {
   /// 0
   NotAvailable = 0,
@@ -230,7 +188,7 @@ pub(crate) enum DnsQueryHeaderFlagsRcode {
   FormatErr = 1,
   /// 2: Server failure - The name server was unable to process this query
   ///                     due to a problem with the name server.
-  SvrFailure = 2,
+  SvrFail = 2,
   /// 3: Name Error - Meaningful only for responses from an authoritative
   ///                 name server, this code signifies that the domain name
   ///                 referenced in the query does not exist.
@@ -244,6 +202,17 @@ pub(crate) enum DnsQueryHeaderFlagsRcode {
   ///              or a name server may not wish to perform a particular
   ///              operation (e.g., zone transfer) for particular data.
   Refused = 5,
-  /// 6-15: Reserved for future use.
-  _Resv = 6,
+  /// 6: A name that should not exist does exist.
+  NameExist = 6,
+  /// 7: A resource record set that should not exist does exist.
+  ResRecordExist = 7,
+  /// 8: A resource record set that should exist does not exist.
+  ResRecordNotExist = 8,
+  /// 9: DNS server is not authoritative for the zone named in the Zone section.
+  ZoneNotAuth = 9,
+  /// 10: A name used in the Prerequisite or Update sections is not within the
+  ///     zone specified by the Zone section.
+  NameNotInZone = 10,
+  /// 6-15: Reserved for future use. (IETF)
+  _Resv = 15,  // use largest possible for correct `std::mem::transmute()` parsing
 }
