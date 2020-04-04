@@ -133,7 +133,7 @@ pub(crate) enum DnsQueryHeaderFlagsOpcode {
   /// 2: a server status request (STATUS)
   StatReq = 2,
   /// 3: unassigned
-  _UnAssign = 3,
+  _UnAssign3 = 3,
   /// 4: notify
   Notify = 4,
   /// 5: update
@@ -141,7 +141,7 @@ pub(crate) enum DnsQueryHeaderFlagsOpcode {
   /// 6: DNS Stateful Operations (DSO)
   Dso = 6,
   /// 7-15: reserved for future use
-  _Resv = 15,  // use largest possible for correct `std::mem::transmute()` parsing
+  _Resv7To15 = 15,  // use largest possible for correct `std::mem::transmute()` parsing
 }
 
 #[derive(Debug)]
@@ -163,9 +163,9 @@ pub(crate) enum DnsQueryHeaderFlagsTc {
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum DnsQueryHeaderFlagsRd {
   /// 0
-  NotDesired = 0,
+  NotRecur = 0,
   /// 1
-  Desired = 1,
+  Recur = 1,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -209,6 +209,6 @@ pub(crate) enum DnsQueryHeaderFlagsRcode {
   /// 10: A name used in the Prerequisite or Update sections is not within the
   ///     zone specified by the Zone section.
   NameNotInZone = 10,
-  /// 6-15: Reserved for future use. (IETF)
-  _Resv = 15,  // use largest possible for correct `std::mem::transmute()` parsing
+  /// 11-15: Reserved for future use.
+  _Resv11To15 = 15,  // use largest possible for correct `std::mem::transmute()` parsing
 }

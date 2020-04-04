@@ -2,6 +2,8 @@
 
 use std::str::from_utf8_unchecked;
 use std::mem::transmute;
+use DnsQueryQuestionClass::In;
+use DnsQueryQuestionType::A;
 
 //  Question format
 //
@@ -16,16 +18,20 @@ use std::mem::transmute;
 //   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 //   |                    q_class                    |
 //   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(crate) struct DnsQueryQuestion {
-  q_name: String,
-  q_type: DnsQueryQuestionType,
-  q_class: u16,
+  pub(crate) q_name: String,
+  pub(crate) q_type: DnsQueryQuestionType,
+  pub(crate) q_class: DnsQueryQuestionClass,
 }
 
 impl From<&[u8]> for DnsQueryQuestion {
   fn from(bytes: &[u8]) -> Self {
-    let mut result = DnsQueryQuestion::default();
+    let mut result = DnsQueryQuestion {
+      q_name: String::new(),
+      q_type: A,
+      q_class: In,
+    };
 
     /* Parse q_name */
     let mut i = 0;
@@ -43,34 +49,59 @@ impl From<&[u8]> for DnsQueryQuestion {
     }
 
     /* Parse q_type  */ {
+      let mut q_type = 0_u16;
       i += 1; // advance from 0xff
-      result.q_type.0 &= (bytes[i] as u16) << 0xf;
+      q_type &= (bytes[i] as u16) << 0xf;
       i += 1;
-      result.q_type.0 &= bytes[i] as u16;
+      q_type &= bytes[i] as u16;
+      result.q_type = q_type.into();
     }
 
     /* Parse q_class */ {
+      let mut q_class = 0_u16;
       i += 1; // advance from 0xff
-      result.q_class &= (bytes[i] as u16) << 0xf;
+      q_class &= (bytes[i] as u16) << 0xf;
       i += 1;
-      result.q_class &= bytes[i] as u16;
+      q_class &= bytes[i] as u16;
+      result.q_class = q_class.into();
     }
 
     result
   }
 }
 
-#[derive(Debug, Default)]
-pub(crate) struct DnsQueryQuestionType(u16);
+impl From<DnsQueryQuestion> for Vec<u8> {
+  fn from(question: DnsQueryQuestion) -> Self {
+    let mut result = vec![];
 
-impl From<&DnsQueryQuestionTypeEnum> for DnsQueryQuestionType {
-  fn from(enum_: &DnsQueryQuestionTypeEnum) -> Self {
-    DnsQueryQuestionType(*enum_ as u16)
+    /* Parse q_name */ {
+      for word in question.q_name.split('.') {
+        let len = word.len();
+        result.push(len as u8);
+        for i in 0..len {
+          result.push(word.as_bytes()[i]);
+        }
+      }
+    }
+
+    /* Parse q_type */ {
+      let q_type: u16 = (&question.q_class).into();
+      result.push((q_type >> 8) as u8);
+      result.push((q_type & 0xff) as u8);
+    }
+
+    /* Parse q_class */ {
+      let q_class: u16 = (&question.q_class).into();
+      result.push((q_class >> 8) as u8);
+      result.push((q_class & 0xff) as u8);
+    }
+
+    result
   }
 }
 
 #[derive(Debug, Copy, Clone)]
-pub(crate) enum DnsQueryQuestionTypeEnum {
+pub(crate) enum DnsQueryQuestionType {
   /// a host address
   A = 1,
   /// an authoritative name server
@@ -178,7 +209,7 @@ pub(crate) enum DnsQueryQuestionTypeEnum {
   /// S/MIME cert association
   SMimeA = 53,
   /// Unassigned
-  _UnAssign0 = 54,
+  _UnAssign54 = 54,
   /// Host Identity Protocol
   Hip = 55,
   /// NINFO
@@ -199,7 +230,7 @@ pub(crate) enum DnsQueryQuestionTypeEnum {
   ZoneMd = 63,
   /// 64-98: Unassigned
   // use largest possible for correct `std::mem::transmute()` parsing
-  _UnAssign1 = 98,
+  _UnAssign64To98 = 98,
   /// Transaction Key record
   TKey = 249,
   /// Transaction Signature
@@ -215,23 +246,70 @@ pub(crate) enum DnsQueryQuestionTypeEnum {
   /// Automatic Multicast Tunneling Relay
   AmtRelay = 260,
   /// Unassigned
-  _UnAssign2 = 32767,
+  _UnAssign32767 = 32767,
   /// DNSSEC Trust Authorities
   Ta = 32768,
   /// DNSSEC Lookaside Validation record
   Dlv = 32769,
   /// 32770-65279: Unassigned
   // use largest possible for correct `std::mem::transmute()` parsing
-  _UnAssign3 = 65279,
-  /// 65280-65534:	Private use
+  _UnAssign32770To65279 = 65279,
+  /// 65280-65534: Private use
   // use largest possible for correct `std::mem::transmute()` parsing
   _PrivUse = 65534,
   /// Reserved
-  _Resv = 65535,
+  _Resv65535 = 65535,
 }
 
-impl From<DnsQueryQuestionType> for DnsQueryQuestionTypeEnum {
-  fn from(num: DnsQueryQuestionType) -> Self {
-    unsafe { transmute::<u16, Self>(num.0) }
+impl From<u16> for DnsQueryQuestionType {
+  fn from(num: u16) -> Self {
+    unsafe { transmute::<u16, Self>(num) }
+  }
+}
+
+impl From<&DnsQueryQuestionType> for u16 {
+  fn from(enum_: &DnsQueryQuestionType) -> Self {
+    *enum_ as Self
+  }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub(crate) enum DnsQueryQuestionClass {
+  /// 0: Reserved
+  _Resv0 = 0,
+  /// 1: Internet (IN)
+  In = 1,
+  /// 2: Unassigned
+  _UnAssign2 = 2,
+  /// 3: Chaos (CH)
+  Ch = 3,
+  /// 4: Hesiod (HS)
+  Hs = 4,
+  /// 5-253: Unassigned
+  // use largest possible for correct `std::mem::transmute()` parsing
+  _UnAssign5To253 = 253,
+  /// 254: QCLASS NONE
+  QClsNone = 254,
+  /// 255: QCLASS * (ANY)
+  QClsAny = 255,
+  /// 256-65279: Unassigned
+  // use largest possible for correct `std::mem::transmute()` parsing
+  _UnAssign256To65279 = 65279,
+  /// 65280-65534: Reserved for Private Use
+  // use largest possible for correct `std::mem::transmute()` parsing
+  _Priv65280To65534 = 65534,
+  /// 65535: Reserved
+  _Resv65535 = 65535,
+}
+
+impl From<u16> for DnsQueryQuestionClass {
+  fn from(num: u16) -> Self {
+    unsafe { transmute::<u16, Self>(num) }
+  }
+}
+
+impl From<&DnsQueryQuestionClass> for u16 {
+  fn from(class: &DnsQueryQuestionClass) -> Self {
+    *class as Self
   }
 }
