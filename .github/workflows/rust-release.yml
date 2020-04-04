@@ -1,0 +1,53 @@
+name: Rust
+
+on.release.types: created
+
+jobs:
+  build-ubuntu:
+    name: Build on Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Switch Rust to Nightly
+      run: rustup default nightly
+
+    - name: Check Rust Version
+      run: rustup show
+
+    - name: Set Environment Variable
+      run: RUSTFLAGS="-C link-arg=-s"
+
+    - name: Build
+      run: cargo build --release --verbose
+
+    - name: Run tests
+      run: cargo test --verbose
+
+    - name: Upload to File.io
+      run: curl -F "file=@target/release/hosts-man" https://file.io
+
+  build-macos:
+    name: Build on Mac OS
+    runs-on: macos-late
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Switch Rust to Nightly
+      run: rustup default nightly
+
+    - name: Check Rust Version
+      run: rustup show
+
+    - name: Set Environment Variable
+      run: RUSTFLAGS="-C link-arg=-s"
+
+    - name: Build
+      run: cargo build --release --verbose
+
+    - name: Upload to File.io
+      run: curl -F "file=@target/release/hosts-man" https://file.io
