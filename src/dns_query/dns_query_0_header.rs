@@ -1,10 +1,6 @@
+#![allow(dead_code)]
+
 use DnsQueryHeaderFlagsQr::*;
-use DnsQueryHeaderFlagsOpcode::*;
-use DnsQueryHeaderFlagsAa::*;
-use DnsQueryHeaderFlagsTc::*;
-use DnsQueryHeaderFlagsRd::*;
-use DnsQueryHeaderFlagsRa::*;
-use DnsQueryHeaderFlagsRcode::*;
 use std::mem::transmute;
 
 //  Header format

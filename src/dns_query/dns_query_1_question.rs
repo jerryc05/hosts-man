@@ -1,5 +1,7 @@
+#![allow(dead_code)]
+
 use std::str::from_utf8_unchecked;
-use DnsQueryQuestionTypeEnum::*;
+use std::mem::transmute;
 
 //  Question format
 //
@@ -44,14 +46,14 @@ impl From<&[u8]> for DnsQueryQuestion {
       i += 1; // advance from 0xff
       result.q_type.0 &= (bytes[i] as u16) << 0xf;
       i += 1;
-      result.q_type.0 &= (bytes[i] as u16);
+      result.q_type.0 &= bytes[i] as u16;
     }
 
     /* Parse q_class */ {
       i += 1; // advance from 0xff
       result.q_class &= (bytes[i] as u16) << 0xf;
       i += 1;
-      result.q_class &= (bytes[i] as u16);
+      result.q_class &= bytes[i] as u16;
     }
 
     result
@@ -61,12 +63,13 @@ impl From<&[u8]> for DnsQueryQuestion {
 #[derive(Debug, Default)]
 pub(crate) struct DnsQueryQuestionType(u16);
 
-impl From<DnsQueryQuestionTypeEnum> for DnsQueryQuestionType {
-  fn from(enum_: DnsQueryQuestionTypeEnum) -> Self {
-    DnsQueryQuestionType(enum_ as u16)
+impl From<&DnsQueryQuestionTypeEnum> for DnsQueryQuestionType {
+  fn from(enum_: &DnsQueryQuestionTypeEnum) -> Self {
+    DnsQueryQuestionType(*enum_ as u16)
   }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub(crate) enum DnsQueryQuestionTypeEnum {
   /// a host address
   A = 1,
@@ -195,7 +198,8 @@ pub(crate) enum DnsQueryQuestionTypeEnum {
   /// message digest for DNS zone
   ZoneMd = 63,
   /// 64-98: Unassigned
-  _UnAssign1 = 98,  // use largest possible for correct `std::mem::transmute()` parsing
+  // use largest possible for correct `std::mem::transmute()` parsing
+  _UnAssign1 = 98,
   /// Transaction Key record
   TKey = 249,
   /// Transaction Signature
@@ -217,15 +221,17 @@ pub(crate) enum DnsQueryQuestionTypeEnum {
   /// DNSSEC Lookaside Validation record
   Dlv = 32769,
   /// 32770-65279: Unassigned
-  _UnAssign3 = 65279,  // use largest possible for correct `std::mem::transmute()` parsing
+  // use largest possible for correct `std::mem::transmute()` parsing
+  _UnAssign3 = 65279,
   /// 65280-65534:	Private use
-  _PrivUse = 65534,   // use largest possible for correct `std::mem::transmute()` parsing
+  // use largest possible for correct `std::mem::transmute()` parsing
+  _PrivUse = 65534,
   /// Reserved
   _Resv = 65535,
 }
 
-// impl From<DnsQueryQuestionType> for DnsQueryQuestionTypeEnum {
-//   fn from(num: DnsQueryQuestionType) -> Self {
-//     match num {} // todo
-//   }
-// }
+impl From<DnsQueryQuestionType> for DnsQueryQuestionTypeEnum {
+  fn from(num: DnsQueryQuestionType) -> Self {
+    unsafe { transmute::<u16, Self>(num.0) }
+  }
+}
