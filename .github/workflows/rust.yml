@@ -1,4 +1,4 @@
-name: Rust
+name: Rust Debug
 
 on: [push, pull_request]
 
