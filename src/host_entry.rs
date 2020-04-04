@@ -1,20 +1,19 @@
 use std::net::IpAddr;
 use std::path::Path;
 use std::fs::read_to_string;
-use std::borrow::Cow;
 use std::str::FromStr;
 use std::fmt::{Display, Formatter, Result};
 
-pub(crate) struct HostEntryVec<'a, 'b> { inner: Vec<HostEntry<'a, 'b>> }
+pub(crate) struct HostEntryVec { inner: Vec<HostEntry> }
 
 #[derive(Debug)]
-pub(crate) struct HostEntry<'a, 'b> {
+pub(crate) struct HostEntry {
   pub(crate) ip: IpAddr,
-  pub(crate) host: Cow<'a, str>,
-  desc_no_pound_sign: Cow<'b, str>,
+  pub(crate) host: String,
+  desc_no_pound_sign: String,
 }
 
-impl<'a, 'b> Display for HostEntryVec<'a, 'b> {
+impl Display for HostEntryVec {
   fn fmt(&self, f: &mut Formatter<'_>) -> Result {
     let vec = &self.inner;
     const WIDTH: usize = 64;
@@ -32,13 +31,13 @@ impl<'a, 'b> Display for HostEntryVec<'a, 'b> {
   }
 }
 
-impl<'a, 'b> AsRef<Vec<HostEntry<'a, 'b>>> for HostEntryVec<'a, 'b> {
-  fn as_ref(&self) -> &Vec<HostEntry<'a, 'b>> {
+impl AsRef<Vec<HostEntry>> for HostEntryVec {
+  fn as_ref(&self) -> &Vec<HostEntry> {
     self.inner.as_ref()
   }
 }
 
-pub(crate) fn parse_hosts<'a, 'b>() -> HostEntryVec<'a, 'b> {
+pub(crate) fn parse_hosts() -> HostEntryVec {
   let mut host_entries = vec![];
 
   for line in read_to_string(hosts_path()).unwrap()
@@ -85,8 +84,8 @@ pub(crate) fn parse_hosts<'a, 'b>() -> HostEntryVec<'a, 'b> {
 
     host_entries.push(HostEntry {
       ip: IpAddr::from_str(&ip.to_owned()).unwrap(),
-      host: host.trim().to_owned().into(),
-      desc_no_pound_sign: desc.trim().to_owned().into(),
+      host: host.trim().to_owned(),
+      desc_no_pound_sign: desc.trim().to_owned(),
     })
   }
   HostEntryVec { inner: host_entries }
