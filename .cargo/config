@@ -1,0 +1,10 @@
+[alias]
+b = "build"
+br = "build --release"
+c = "clippy -- -Wclippy::all -Wclippy::nursery -Wclippy::cargo -Wclippy::pedantic"
+t = "test"
+r = "run"
+rr = "run --release"
+
+[build]
+rustflags = ["-C", "link-arg=-s"]
