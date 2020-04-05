@@ -1,8 +1,9 @@
-use std::net::{SocketAddr, TcpStream};
-use std::time::Instant;
+use std::net::{TcpStream, ToSocketAddrs};
+use std::time::{Instant, Duration};
 
-pub(crate) fn tcping(ip: SocketAddr) -> u128 {
+#[inline]
+pub(crate) fn tcping<T: ToSocketAddrs>(ip: T) -> Duration {
   let start = Instant::now();
   TcpStream::connect(ip).unwrap();
-  return start.elapsed().as_millis();
+  start.elapsed()
 }
