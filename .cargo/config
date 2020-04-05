@@ -1,7 +1,12 @@
 [alias]
 b = "build"
 br = "build --release"
-c = "clippy -- -Wclippy::all -Wclippy::nursery -Wclippy::cargo -Wclippy::pedantic"
+c = """clippy -- \
+-Wclippy::all \
+-Wclippy::nursery \
+-Wclippy::cargo \
+-Wclippy::pedantic \
+-Aclippy::uninit_assumed_init"""
 t = "test"
 r = "run"
 rr = "run --release"
