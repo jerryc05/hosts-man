@@ -2,10 +2,13 @@
 
 use crate::dns_query::utils::{parse_var_name, parse_u16, parse_u32,
                               DnsQueryClass, DnsQueryType};
-use crate::dns_query::utils::DnsQueryType::A;
+use crate::dns_query::utils::DnsQueryType::{A, CName};
 use crate::dns_query::utils::DnsQueryClass::In;
 use std::net::Ipv4Addr;
 use std::mem::MaybeUninit;
+use crate::dns_query::dns_query_2_resource_record::DnsQueryResourceRecordRDataType::_Other;
+use std::convert::TryFrom;
+use std::option::NoneError;
 
 //  Answer/Authority/Additional format
 //
@@ -37,11 +40,20 @@ pub(crate) struct DnsQueryResourceRecord {
   class: DnsQueryClass,
   ttl: u32,
   rd_length: u16,
-  r_data: Vec<u8>,
+  r_data: DnsQueryResourceRecordRDataType,
 }
 
-impl From<&[u8]> for DnsQueryResourceRecord {
-  fn from(bytes: &[u8]) -> Self {
+#[derive(Debug)]
+pub(crate) enum DnsQueryResourceRecordRDataType {
+  Ipv4Addr(Ipv4Addr),
+  String(String),
+  _Other(Vec<u8>),
+}
+
+impl TryFrom<&[u8]> for DnsQueryResourceRecord {
+  type Error = NoneError;
+
+  fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
     #[allow(invalid_value)]
       let mut result = unsafe {
       Self {
@@ -76,28 +88,45 @@ impl From<&[u8]> for DnsQueryResourceRecord {
     }
 
     /* Parse r_data */ {
-      result.r_data = iter.as_slice().to_vec();
+      if let In = result.class {
+        match result.type_ {
+          A => {
+            result.r_data = DnsQueryResourceRecordRDataType::Ipv4Addr(Ipv4Addr::new(
+              *iter.next()?, *iter.next()?,
+              *iter.next()?, *iter.next()?,
+            ));
+          }
+          CName => {
+            let mut s = String::new();
+            parse_var_name(&mut iter, &mut s);
+            result.r_data = DnsQueryResourceRecordRDataType::String(s);
+          }
+          _ => { result.r_data = _Other(iter.as_slice().to_vec()); }
+        }
+      } else {
+        result.r_data = _Other(iter.as_slice().to_vec());
+      }
     }
 
-    result
+    Ok(result)
   }
 }
 
-/* Type A -> Ipv4Addr */
-impl DnsQueryResourceRecord {
-  unsafe fn parse_ipv4addr_unchecked(&self) -> Ipv4Addr {
-    Ipv4Addr::new(self.r_data[0], self.r_data[1], self.r_data[2], self.r_data[3])
-  }
-  fn parse_ipv4addr(&self) -> Result<Ipv4Addr, &str> {
-    if let A = self.type_ {} else {
-      return Err("Incorrect [type_] when parsing [Ipv4Addr]");
-    }
-    if self.r_data.len() != 4 {
-      return Err("Incorrect [r_data] when parsing [Ipv4Addr]");
-    }
-    if let In = self.class {} else {
-      return Err("Incorrect [class] when parsing [Ipv4Addr]");
-    }
-    Ok(unsafe { self.parse_ipv4addr_unchecked() })
-  }
-}
+// /* Type A -> Ipv4Addr */
+// impl DnsQueryResourceRecord {
+//   unsafe fn parse_ipv4addr_unchecked(&self) -> Ipv4Addr {
+//     Ipv4Addr::new(self.r_data[0], self.r_data[1], self.r_data[2], self.r_data[3])
+//   }
+//   fn parse_ipv4addr(&self) -> Result<Ipv4Addr, &str> {
+//     if let A = self.type_ {} else {
+//       return Err("Incorrect [type_] when parsing [Ipv4Addr]");
+//     }
+//     if self.r_data.len() != 4 {
+//       return Err("Incorrect [r_data] when parsing [Ipv4Addr]");
+//     }
+//     if let In = self.class {} else {
+//       return Err("Incorrect [class] when parsing [Ipv4Addr]");
+//     }
+//     Ok(unsafe { self.parse_ipv4addr_unchecked() })
+//   }
+// }

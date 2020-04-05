@@ -1,3 +1,5 @@
+#![feature(try_trait)]
+
 use crate::host_entry::parse_hosts;
 use crate::tcping::tcping;
 use std::net::SocketAddr;
