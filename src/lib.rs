@@ -4,6 +4,7 @@ use std::net::SocketAddr;
 
 mod host_entry;
 mod tcping;
+mod dns_query;
 
 pub fn start() {
   let entries = parse_hosts();
