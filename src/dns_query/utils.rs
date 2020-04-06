@@ -3,11 +3,12 @@
 use std::slice::Iter;
 use std::str::from_utf8_unchecked;
 use std::mem::transmute;
+use std::option::NoneError;
 
 #[inline]
-pub(crate) fn parse_var_name(iter: &mut Iter<u8>, str: &mut String) {
+pub(crate) fn iter_to_str(iter: &mut Iter<u8>, str: &mut String) {
   while let Some(byte) = iter.next() {
-    /* The "name" field ends with '\0' */ {
+    /* Stop when reaching '\0' */ {
       if *byte == 0 {
         return;
       }
@@ -33,19 +34,16 @@ pub(crate) fn parse_var_name(iter: &mut Iter<u8>, str: &mut String) {
 }
 
 #[inline]
-pub(crate) fn parse_u16(iter: &mut Iter<u8>) -> u16 {
-  let mut result = u16::from(*iter.next().unwrap()) << 8;
-  result &= u16::from(*iter.next().unwrap());
-  result
+pub(crate) fn iter_to_u16_be(iter: &mut Iter<u8>
+) -> Result<u16, NoneError> {
+  Ok(u16::from_be_bytes([*iter.next()?, *iter.next()?]))
 }
 
 #[inline]
-pub(crate) fn parse_u32(iter: &mut Iter<u8>) -> u32 {
-  let mut result = u32::from(*iter.next().unwrap()) << (3 * 8);
-  result &= u32::from(*iter.next().unwrap()) << (2 * 8);
-  result &= u32::from(*iter.next().unwrap()) << 8;
-  result &= u32::from(*iter.next().unwrap());
-  result
+pub(crate) fn iter_to_u32_be(iter: &mut Iter<u8>
+) -> Result<u32, NoneError> {
+  Ok(u32::from_be_bytes(
+    [*iter.next()?, *iter.next()?, *iter.next()?, *iter.next()?]))
 }
 
 #[derive(Debug, Copy, Clone)]

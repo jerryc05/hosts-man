@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 
-use crate::dns_query::utils::{parse_var_name, parse_u16,
+use crate::dns_query::utils::{iter_to_str, iter_to_u16_be,
                               DnsQueryType, DnsQueryClass};
-use std::mem::MaybeUninit;
+use std::convert::TryFrom;
+use std::num::TryFromIntError;
+use std::option::NoneError;
 
 //  Question format
 //
@@ -24,40 +26,41 @@ pub(crate) struct DnsQueryQuestion {
   pub(crate) q_class: DnsQueryClass,
 }
 
-impl From<&[u8]> for DnsQueryQuestion {
-  fn from(bytes: &[u8]) -> Self {
-    let mut result = unsafe {
-      Self {
-        q_name: String::new(),
-        q_type: MaybeUninit::uninit().assume_init(),
-        q_class: MaybeUninit::uninit().assume_init(),
-      }
-    };
+impl TryFrom<&[u8]> for DnsQueryQuestion {
+  type Error = NoneError;
+
+  fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
     let mut iter = bytes.iter();
 
     /* Parse q_name */
-    parse_var_name(&mut iter, &mut result.q_name);
-
-    /* Parse q_type  */ {
-      result.q_type = parse_u16(&mut iter).into();
+    let mut q_name;
+    {
+      q_name = String::new();
+      iter_to_str(&mut iter, &mut q_name);
     }
 
-    /* Parse q_class */ {
-      result.q_class = parse_u16(&mut iter).into();
-    }
+    /* Parse q_type  */
+    let q_type = iter_to_u16_be(&mut iter)?.into();
 
-    result
+    /* Parse q_class */
+    let q_class = iter_to_u16_be(&mut iter)?.into();
+
+    Ok(Self { q_name, q_type, q_class })
   }
 }
 
-impl From<DnsQueryQuestion> for Vec<u8> {
-  fn from(question: DnsQueryQuestion) -> Self {
+impl TryFrom<DnsQueryQuestion> for Vec<u8> {
+  type Error = TryFromIntError;
+
+  fn try_from(question: DnsQueryQuestion) -> Result<Self, Self::Error> {
     let mut result = vec![];
 
     /* Parse q_name */ {
       for word in question.q_name.split('.') {
         let len = word.len();
-        result.push(len as u8);
+        #[allow(clippy::cast_possible_truncation)] let len_u8 = len as u8;
+        debug_assert!(len_u8 == u8::try_from(len)?);
+        result.push(len_u8);
         for i in 0..len {
           result.push(word.as_bytes()[i]);
         }
@@ -65,17 +68,15 @@ impl From<DnsQueryQuestion> for Vec<u8> {
     }
 
     /* Parse q_type */ {
-      let q_type: u16 = (&question.q_class).into();
-      result.push((q_type >> 8) as u8);
-      result.push((q_type & 0xff) as u8);
+      let q_type: u16 = (&question.q_type).into();
+      result.extend_from_slice(&q_type.to_be_bytes());
     }
 
     /* Parse q_class */ {
       let q_class: u16 = (&question.q_class).into();
-      result.push((q_class >> 8) as u8);
-      result.push((q_class & 0xff) as u8);
+      result.extend_from_slice(&q_class.to_be_bytes());
     }
 
-    result
+    Ok(result)
   }
 }

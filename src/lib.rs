@@ -9,7 +9,7 @@ mod tcping;
 mod dns_query;
 
 pub fn start() {
-  let entries = parse_hosts();
+  let entries = parse_hosts().unwrap();
   println!("{}", entries);
 
   for entry in entries.as_ref() {

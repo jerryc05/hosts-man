@@ -2,9 +2,10 @@ use std::net::IpAddr;
 use std::path::Path;
 use std::fs::read_to_string;
 use std::str::FromStr;
-use std::fmt::{Display, Formatter, Result};
+use std::fmt::{Display, Formatter};
+use std::io::Error;
 
-pub(crate) struct HostEntryVec { inner: Vec<HostEntry> }
+pub(crate) struct HostEntryVec(Vec<HostEntry>);
 
 #[derive(Debug)]
 pub(crate) struct HostEntry {
@@ -13,12 +14,13 @@ pub(crate) struct HostEntry {
   desc_no_pound_sign: String,
 }
 
-impl Display for HostEntryVec {
-  fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-    let vec = &self.inner;
-    const WIDTH: usize = 64;
+const DISPLAY_WIDTH: usize = 64;
 
-    writeln!(f, "{:-^1$}", "Start of Hosts list", WIDTH)?;
+impl Display for HostEntryVec {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    let vec = &self.0;
+
+    writeln!(f, "{:-^1$}", "Start of Hosts list", DISPLAY_WIDTH)?;
     for (i, entry) in vec.iter().enumerate() {
       writeln!(f, "{:2}: IP: {:?}", i + 1, entry.ip)?;
       writeln!(f, "\tHost: {}", entry.host)?;
@@ -26,33 +28,31 @@ impl Display for HostEntryVec {
         writeln!(f, "\tDesc: {}", entry.desc_no_pound_sign)?;
       }
     }
-    write!(f, "{:-^1$}", "End of hosts list", WIDTH)?;
+    write!(f, "{:-^1$}", "End of hosts list", DISPLAY_WIDTH)?;
     Ok(())
   }
 }
 
 impl AsRef<Vec<HostEntry>> for HostEntryVec {
   fn as_ref(&self) -> &Vec<HostEntry> {
-    self.inner.as_ref()
+    &self.0
   }
 }
 
-pub(crate) fn parse_hosts() -> HostEntryVec {
+pub(crate) fn parse_hosts() -> Result<HostEntryVec,Error> {
   let mut host_entries = vec![];
 
-  for line in read_to_string(hosts_path()).unwrap()
-                                          .split_terminator('\n') {
+  for line in read_to_string(hosts_path())?.split_terminator('\n') {
     let mut ip_splitter = line.trim().splitn(2, ' ');
 
     /* Parse IP */
     let ip;
     {
-      match ip_splitter.next() {
-        Some(ip_) => ip = ip_,
-        None => {
-          eprintln!("IP does not exist [{}]!", line);
-          continue;
-        }
+      if let Some(ip_) = ip_splitter.next() {
+        ip = ip_
+      } else {
+        eprintln!("IP does not exist [{}]!", line);
+        continue;
       }
     }
 
@@ -88,7 +88,7 @@ pub(crate) fn parse_hosts() -> HostEntryVec {
       desc_no_pound_sign: desc.trim().to_owned(),
     })
   }
-  HostEntryVec { inner: host_entries }
+  Ok(HostEntryVec(host_entries))
 }
 
 fn hosts_path() -> &'static Path {
