@@ -7,7 +7,6 @@ clippy -- \
 -Wclippy::nursery \
 -Wclippy::cargo \
 -Wclippy::pedantic \
--Aclippy::uninit_assumed_init \
 """
 t = "test"
 r = "run"
