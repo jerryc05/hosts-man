@@ -6,7 +6,6 @@ clippy -- \
 -Wclippy::all \
 -Wclippy::nursery \
 -Wclippy::cargo \
--Wclippy::pedantic \
 """
 t = "test"
 r = "run"
