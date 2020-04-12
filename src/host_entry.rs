@@ -1,9 +1,12 @@
+#![allow(dead_code)]
+
 use std::net::IpAddr;
 use std::path::Path;
 use std::fs::read_to_string;
 use std::str::FromStr;
 use std::fmt::{Display, Formatter};
 use std::io::Error;
+use std::ops::{DerefMut, Deref};
 
 pub(crate) struct HostEntryVec(Vec<HostEntry>);
 
@@ -33,13 +36,21 @@ impl Display for HostEntryVec {
   }
 }
 
-impl AsRef<Vec<HostEntry>> for HostEntryVec {
-  fn as_ref(&self) -> &Vec<HostEntry> {
+impl Deref for HostEntryVec {
+  type Target = Vec<HostEntry>;
+
+  fn deref(&self) -> &Self::Target {
     &self.0
   }
 }
 
-pub(crate) fn parse_hosts() -> Result<HostEntryVec,Error> {
+impl DerefMut for HostEntryVec {
+  fn deref_mut(&mut self) -> &mut Self::Target {
+    &mut self.0
+  }
+}
+
+pub(crate) fn parse_hosts() -> Result<HostEntryVec, Error> {
   let mut host_entries = vec![];
 
   for line in read_to_string(hosts_path())?.split_terminator('\n') {
@@ -61,24 +72,20 @@ pub(crate) fn parse_hosts() -> Result<HostEntryVec,Error> {
     let desc;
     {
       let host_n_desc;
-      match ip_splitter.next() {
-        Some(host_n_desc_) => host_n_desc = host_n_desc_,
-        None => {
-          eprintln!("Invalid host and desc [{}]!", line);
-          continue;
-        }
+      if let Some(host_n_desc_) = ip_splitter.next() {
+        host_n_desc = host_n_desc_
+      } else {
+        eprintln!("Invalid host and desc [{}]!", line);
+        continue;
       }
 
       let mut host_splitter = host_n_desc.splitn(2, '#');
-      match host_splitter.next() {
-        Some(host_) => {
-          host = host_;
-          desc = host_splitter.next().unwrap_or("")
-        }
-        None => {
-          host = host_n_desc;
-          desc = "";
-        }
+      if let Some(host_) = host_splitter.next() {
+        host = host_;
+        desc = host_splitter.next().unwrap_or("")
+      } else {
+        host = host_n_desc;
+        desc = "";
       }
     }
 
